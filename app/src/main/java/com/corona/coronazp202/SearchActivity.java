@@ -1,13 +1,15 @@
 package com.corona.coronazp202;
 
 import android.app.ProgressDialog;
+import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -17,19 +19,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.util.ArrayList;
 
-import android.app.SearchManager;
-import android.support.v7.widget.SearchView;
-
 public class SearchActivity extends AppCompatActivity {
-    public static final String COVID_API = "https://covid19-api.weedmark.systems/api/v1/stats";
+    public static final String MARGARITA_API = "https://www.thecocktaildb.com/api/json/v1/1/search.php?s=margarita";
 
     private RecyclerView recyclerView;
     private Adapter adapter;
 
-    private ArrayList<Corona> coronaList = new ArrayList<Corona>();
+    private ArrayList<Margarita> margaritaList = new ArrayList<Margarita>();
 
     SearchView searchView = null;
 
@@ -77,21 +75,21 @@ public class SearchActivity extends AppCompatActivity {
             }
 
             // From all countries covid list creates specific list by searched country
-            ArrayList<Corona> coronaListByCountry = JSON.getCoronaListByCountry(coronaList, query);
+            ArrayList<Margarita> margaritaListByCountry = JSON.getMargaritaListByCountry(margaritaList, query);
 
-            if (coronaListByCountry.size() == 0) {
+            if (margaritaListByCountry.size() == 0) {
                 Toast.makeText(this, getResources().getString(R.string.search_no_results) + query, Toast.LENGTH_SHORT).show();
             }
 
             // Setup and Handover data to recyclerview
-            recyclerView = (RecyclerView) findViewById(R.id.corona_list);
-            adapter = new Adapter(SearchActivity.this, coronaListByCountry);
+            recyclerView = (RecyclerView) findViewById(R.id.margarita_list);
+            adapter = new Adapter(SearchActivity.this, margaritaListByCountry);
             recyclerView.setAdapter(adapter);
             recyclerView.setLayoutManager(new LinearLayoutManager(SearchActivity.this));
         }
     }
 
-    private class AsyncFetch extends AsyncTask<String, String, ArrayList<Corona>> {
+    private class AsyncFetch extends AsyncTask<String, String, ArrayList<Margarita>> {
         ProgressDialog pdLoading = new ProgressDialog(SearchActivity.this);
 
         @Override
@@ -104,51 +102,23 @@ public class SearchActivity extends AppCompatActivity {
         }
 
         @Override
-        protected ArrayList<Corona> doInBackground(String... params) {
+        protected ArrayList<Margarita> doInBackground(String... params) {
             try {
-                JSONObject jsonObject = JSON.readJsonFromUrl(COVID_API);
+                JSONObject jsonObject = JSON.readJsonFromUrl(MARGARITA_API);
 
-                int statusCode = 0;
+                JSONArray jsonArray = null;
+                margaritaList = new ArrayList<Margarita>();
                 try {
-                    statusCode = (Integer) jsonObject.get("statusCode");
+                    jsonArray = JSON.getJSONArray(jsonObject);
+                    margaritaList = JSON.getList(jsonArray);
                 } catch (JSONException e) {
                     Toast.makeText(
-                            SearchActivity.this,
-                            getResources().getText(R.string.search_error_reading_data) + e.getMessage(),
-                            Toast.LENGTH_LONG
-                    ).show();
-                }
-                if (statusCode == HttpURLConnection.HTTP_OK) {
-                    JSONArray jsonArray = null;
-                    coronaList = new ArrayList<Corona>();
-                    try {
-                        jsonArray = JSON.getJSONArray(jsonObject);
-                        coronaList = JSON.getList(jsonArray);
-                    } catch (JSONException e) {
-                        Toast.makeText(
                                 SearchActivity.this,
                                 getResources().getText(R.string.search_error_reading_data) + e.getMessage(),
                                 Toast.LENGTH_LONG
                         ).show();
                     }
-                    return coronaList;
-                } else { // something went wrong
-                    String message = null;
-                    try {
-                        message = (String) jsonObject.get("message");
-                    } catch (JSONException e) {
-                        Toast.makeText(
-                                SearchActivity.this,
-                                getResources().getText(R.string.search_error_reading_data) + e.getMessage(),
-                                Toast.LENGTH_LONG
-                        ).show();
-                    }
-                    Toast.makeText(
-                            SearchActivity.this,
-                            getResources().getText(R.string.search_error_reading_data) + message,
-                            Toast.LENGTH_LONG
-                    ).show();
-                }
+                return margaritaList;
             } catch (JSONException | IOException e1) {
                 Toast.makeText(
                         SearchActivity.this,
@@ -157,17 +127,16 @@ public class SearchActivity extends AppCompatActivity {
                 ).show();
                 return null;
             }
-            return null;
         }// doInBackground
 
         @Override
-        protected void onPostExecute(ArrayList<Corona> coronaList) {
+        protected void onPostExecute(ArrayList<Margarita> coronaList) {
             //this method will be running on UI thread
             pdLoading.dismiss();
 
-           if(coronaList != null) {
-               Toast.makeText(SearchActivity.this, getResources().getString(R.string.search_found_entries_from_api) + coronaList.size(), Toast.LENGTH_SHORT).show();
-           }
+            if (margaritaList != null) {
+                Toast.makeText(SearchActivity.this, getResources().getString(R.string.search_found_entries_from_api) + coronaList.size(), Toast.LENGTH_SHORT).show();
+            }
         }//onPostExecute
     }//AsyncFetch class
 }
